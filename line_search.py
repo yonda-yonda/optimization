@@ -7,6 +7,10 @@ class FailureQuadraticAproximationException (Exception):
   def __str__ (self):
     return ("Failed quadratic aproximation.")
 
+class DoNotConvergeException (Exception):
+  def __str__ (self):
+    return ("Don't converge.")
+
 def line_search(func, x0, step_size = 0.1, max_itration = 10000, eps = 1e-10):
     """
         二次多項式近似による直線探索
@@ -40,8 +44,11 @@ def line_search(func, x0, step_size = 0.1, max_itration = 10000, eps = 1e-10):
     while iteration < max_itration and not converged:
         iteration = iteration + 1
 
-        x[3] = x[1] + step
-        f[3] = func(x[3])
+        try:
+            x[3] = x[1] + step
+            f[3] = func(x[3])
+        except OverflowError as e:
+            raise DoNotConvergeException()
 
         if f[3] <= f[1]:
             step = step * 2
@@ -113,9 +120,38 @@ def line_search(func, x0, step_size = 0.1, max_itration = 10000, eps = 1e-10):
 
 if __name__ == '__main__':
     # 目的関数
-    def objective(x):
-        return x * x * x * x + 3.0 * x * x * x + 2.0 * x * x + 1.0
+    def objective1(x):
+        return x ** 4 + 3.0 * x ** 3 + 2.0 * x ** 2 + 1.0
 
-    x = -2.0
+    x1 = -10.0
 
-    print(line_search(objective, x, 1))
+    print('objective : x ** 4 + 3.0 * x ** 3 + 2.0 * x ** 2 + 1.0')
+    print('x0 = ' + str(x1))
+    print(line_search(objective1, x1))
+
+    x2 = -2.0
+    print('objective : x ** 3 - x ** 2 - 2.0 * x')
+    print('x0 = ' + str(x2))
+    try:
+        print(line_search(objective1, x2))
+    except FailureQuadraticAproximationException as e:
+        print(e)
+
+
+    def objective2(x):
+        return x ** 3 - x ** 2 - 2.0 * x
+
+    x3 = 0.0
+
+    print('objective : x ** 3 - x ** 2 - 2.0 * x')
+    print('x0 = ' + str(x3))
+    print(line_search(objective2, x3))
+
+    x4 = -10.0
+
+    print('objective : x ** 3 - x ** 2 - 2.0 * x')
+    print('x0 = ' + str(x4))
+    try:
+        print(line_search(objective2, x4))
+    except DoNotConvergeException as e:
+        print(e)

@@ -42,13 +42,15 @@ def golden_section_method(f, df, x0, step_size = 0.1, max_itration = 10000, eps 
     while iteration < max_itration:
         iteration = iteration + 1
 
-        x2 = x1 + step * direction
-        f2 = f(x2)
+        try:
+            x2 = x1 + step * direction
+            f2 = f(x2)
+            if f1 < f2:
+                break
 
-        if f1 < f2:
-            break
-
-        step = 2.0 * step
+            step = 2.0 * step
+        except OverflowError as e:
+            raise DoNotConvergeException()
 
     if iteration >= max_itration:
         raise CanNotFindConvexException()
@@ -81,13 +83,36 @@ def golden_section_method(f, df, x0, step_size = 0.1, max_itration = 10000, eps 
 
 if __name__ == '__main__':
     # 目的関数
-    def objective(x):
-        return x * x * x * x + 3.0 * x * x * x + 2.0 * x * x + 1.0
+    def objective1(x):
+        return x ** 4 + 3.0 * x ** 3 + 2.0 * x ** 2 + 1.0
 
     # 極地は-1.640388203(下に凸), -0.609611797(上に凸), 0.0(下に凸)
-    def gradient(x):
-        return 4.0  * x * x * x + 9.0 * x * x + 4.0 * x
+    def gradient1(x):
+        return 4.0  * x ** 3 + 9.0 * x ** 2 + 4.0 * x
 
-    x = -2.0
+    x1 = -10.0
 
-    print(golden_section_method(objective, gradient, x))
+    print('objective : x ** 4 + 3.0 * x ** 3 + 2.0 * x ** 2 + 1.0')
+    print('x0 = ' + str(x1))
+    print(golden_section_method(objective1, gradient1, x1))
+
+    def objective2(x):
+        return x ** 3 - x ** 2 - 2.0 * x
+
+    def gradient2(x):
+        return 3 * x ** 2 - 2.0 * x - 2.0
+
+    x2 = 0.0
+
+    print('objective : x ** 3 - x ** 2 - 2.0 * x')
+    print('x0 = ' + str(x2))
+    print(golden_section_method(objective2, gradient2, x2))
+
+    x3 = -10.0
+
+    print('objective : x ** 3 - x ** 2 - 2.0 * x')
+    print('x0 = ' + str(x3))
+    try:
+        print(golden_section_method(objective2, gradient2, x3))
+    except DoNotConvergeException as e:
+        print(e)
