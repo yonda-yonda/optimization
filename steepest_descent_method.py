@@ -13,7 +13,7 @@ class FailedArmijoRuleException (Exception):
   def __str__ (self):
     return ("Failed armijo rule.")
 
-def steepest_descent_method(objective_func, gradient_func, x0, max_iteration=None, eps=1e-6, alpha = 0.001, beta = 0.5, max_power = 32):
+def steepest_descent_method(objective_func, gradient_func, x0, max_iteration=None, eps=1e-6, alpha = 0.001, beta = 0.5, max_power = 32, display=False):
     '''
     最急降下法
     '''
@@ -66,17 +66,29 @@ def steepest_descent_method(objective_func, gradient_func, x0, max_iteration=Non
     if iteration >= max_iteration:
         raise DoNotConvergeException()
 
+    if display:
+        print('iteration : ' + str(iteration))
+
     return x_mat
 
 
 if __name__ == '__main__':
     # 目的関数
-    def objective(x):
+    def objective1(x):
         return 2 * x[0,0] - 4 * x[1,0] + x[0,0] ** 2 + 2 * x[1,0] ** 2 + 2 * x[0,0] * x[1,0]
 
-    def gradient(x):
+    def gradient1(x):
         return np.mat([[2 + 2*x[0,0] + 2*x[1,0]],[-4 + 4 * x[1,0] + 2*x[0,0]]])
 
-    x0 = np.mat([[1],[1]])
+    x1 = np.mat([[1],[1]])
+    print(steepest_descent_method(objective1, gradient1, x1, display=True))
 
-    print(steepest_descent_method(objective, gradient, x0))
+    def objective2(x):
+        return x[0,0] ** 2 + 2 * x[1,0] ** 2 - 1.0 * x[0,0] * x[1,0] + x[0,0] - 2.0 * x[1,0]
+
+    def gradient2(x):
+        return np.mat([[2*x[0,0] -1.0*x[1,0] + 1.0],[4 * x[1,0] -1.0*x[0,0] -2.0]])
+
+    x2 = np.mat([[15],[15]])
+
+    print(steepest_descent_method(objective2, gradient2, x2, display=True))
