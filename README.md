@@ -14,3 +14,8 @@
 * 最急降下法
 * 準ニュートン法
 
+## 参考資料
+* http://www-optima.amp.i.kyoto-u.ac.jp/~nobuo/Ryukoku/2002/course7.pdf
+* http://www.uno.nuem.nagoya-u.ac.jp/~taji/lecture/mathprog/No10.pdf
+* これなら分かる最適化数学―基礎原理から計算手法まで
+* 数理計画法による最適化 -実際の問題に活かすための考え方と手法-
