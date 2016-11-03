@@ -13,7 +13,7 @@ class FailedArmijoRuleException (Exception):
   def __str__ (self):
     return ("Failed armijo rule.")
 
-def quasi_newton_method(objective_func, gradient_func, x0, max_iteration=None, eps=1e-6, alpha = 0.001, beta = 0.5, max_power = 32, display=False):
+def quasi_newton_method(objective_func, gradient_func, x0, max_iteration=None, eps=1e-6, alpha = 0.001, beta = 0.5, max_power = 64, display=False):
     '''
     準ニュートン法
     '''
