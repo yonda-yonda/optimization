@@ -4,6 +4,13 @@ import numpy as np
 import types
 import numbers
 import math
+import sys
+import os
+import io
+
+path = os.path.join(os.path.dirname(__file__), './')
+sys.path.append(path)
+from golden_section_method import *
 
 class QuasiNewtonMethod(object):
     '''
@@ -39,7 +46,6 @@ class QuasiNewtonMethod(object):
             self.max_iteration = max_iteration
 
         # モード
-        self.display = False
         self.line_search_success = False
         self.converge = False
 
@@ -48,11 +54,14 @@ class QuasiNewtonMethod(object):
         self.armijo_beta = 0.5
         self.armijo_max_iteration = 64
 
+        # 直線探索
+        self.step_size = 0.001
+
         # 目的変数
         self.X = np.mat(np.empty((self.x_dim,self.max_iteration)), dtype=np.float64)
         self.__k = 0
 
-    def solve(self, x0):
+    def solve(self, x0, armijo_mode = True):
         assert isinstance(x0, np.matrixlib.defmatrix.matrix) and x0.shape[0] == self.x_dim and x0.shape[1] == 1, \
             'x0はnumpyのmatrixかつx_dimの1次元配列である必要があります。'
 
@@ -77,18 +86,29 @@ class QuasiNewtonMethod(object):
             # 準ニュートン法
             d_mat = -1.0 * hessian * df_mat
 
-            # Armijoルールによるステップ探索
-            armijo_power = 0
-            while armijo_power < self.armijo_max_iteration:
-                t = math.pow(self.armijo_beta , armijo_power)
-                if self.objective_func(x_mat + t*d_mat) <= f + self.armijo_alpha * t * df_mat.T * d_mat:
-                    break
-                armijo_power = armijo_power + 1
+            if armijo_mode:
+                # Armijoルールによるステップ探索
+                armijo_power = 0
+                while armijo_power < self.armijo_max_iteration:
+                    t = math.pow(self.armijo_beta , armijo_power)
+                    if self.objective_func(x_mat + t*d_mat) <= f + self.armijo_alpha * t * df_mat.T * d_mat:
+                        break
+                    armijo_power = armijo_power + 1
 
-            if armijo_power >= self.armijo_max_iteration:
-                return None
+                if armijo_power >= self.armijo_max_iteration:
+                    return None
+                else:
+                    self.line_search_success = True
+
             else:
-                self.line_search_success = True
+                def line_objective_function(t):
+                    return self.objective_func(x_mat + t * d_mat)
+
+                def line_gradient_function(t):
+                    return (self.gradient_func(x_mat + t * d_mat).T * df_mat)[0,0]
+
+                t = golden_section_method(line_objective_function, line_gradient_function, 0.0, self.step_size)
+
 
             # ヘッシアン
             x_new_mat = x_mat + t * d_mat
@@ -117,7 +137,7 @@ class QuasiNewtonMethod(object):
 if __name__ == '__main__':
     print('QuasiNewtonMethod')
 
-    # 目的関数
+    print('problem1')
     def objective1(x):
         return 2 * x[0,0] - 4 * x[1,0] + x[0,0] ** 2 + 2 * x[1,0] ** 2 + 2 * x[0,0] * x[1,0]
 
@@ -127,8 +147,10 @@ if __name__ == '__main__':
     x1 = np.mat([[1],[1]])
 
     q=QuasiNewtonMethod(objective1, gradient1, 2)
-    print(q.solve(x1), q.converge, q.get_iteration())
+    print('armijo', q.solve(x1).T, q.converge, q.get_iteration())
+    print('optim ', q.solve(x1, armijo_mode=False).T, q.converge, q.get_iteration())
 
+    print('problem2')
     def objective2(x):
         return x[0,0] ** 2 + 2 * x[1,0] ** 2 - 1.0 * x[0,0] * x[1,0] + x[0,0] - 2.0 * x[1,0]
 
@@ -138,9 +160,10 @@ if __name__ == '__main__':
     x2 = np.mat([[15],[15]])
 
     q=QuasiNewtonMethod(objective2, gradient2, 2)
-    print(q.solve(x2), q.converge, q.get_iteration())
+    print('armijo', q.solve(x2).T, q.converge, q.get_iteration())
+    print('optim ', q.solve(x2, armijo_mode=False).T, q.converge, q.get_iteration())
 
-
+    print('problem3')
     def objective3(x):
         return x[0,0] ** 2 + 2 * x[1,0] ** 2 - 1.0 * x[0,0] * x[1,0] + x[0,0] - 2.0 * x[1,0] \
             + 4.0 * math.sin(0.1 * (x[0,0] + 0.2857)**2) + 12.0 * math.sin(0.1 * (x[1,0] - 0.4286)**2)
@@ -154,9 +177,10 @@ if __name__ == '__main__':
     x3 = np.mat([[15],[15]])
 
     q=QuasiNewtonMethod(objective3, gradient3, 2)
-    print(q.solve(x3), q.converge, q.get_iteration())
+    print('armijo', q.solve(x3).T, q.converge, q.get_iteration())
+    print('optim ', q.solve(x3, armijo_mode=False).T, q.converge, q.get_iteration())
 
-
+    print('problem4')
     def objective4(x):
         return 100.0*(x[1,0] - x[0,0]**2)**2 + (1-x[0,0])**2
 
@@ -165,9 +189,11 @@ if __name__ == '__main__':
 
     x4 = np.mat([[0],[0]])
 
-    q=QuasiNewtonMethod(objective4, gradient4, 2, max_iteration=20000)
-    print(q.solve(x4), q.converge, q.get_iteration())
+    q=QuasiNewtonMethod(objective4, gradient4, 2)
+    print('armijo', q.solve(x4).T, q.converge, q.get_iteration())
+    print('optim ', q.solve(x4, armijo_mode=False).T, q.converge, q.get_iteration())
 
+    print('problem5')
     def objective5(x):
         return (1.5 - x[0,0]*(1 - x[1,0]))**2 + (2.25 - x[0,0] * (1-x[1,0]**2))**2 + (2.625 - x[0,0] * (1-x[1,0]**3))**2
 
@@ -179,5 +205,6 @@ if __name__ == '__main__':
 
     x5 = np.mat([[0],[0]])
 
-    q=QuasiNewtonMethod(objective5, gradient5, 2, max_iteration=20000)
-    print(q.solve(x4), q.converge, q.get_iteration())
+    q=QuasiNewtonMethod(objective5, gradient5, 2)
+    print('armijo', q.solve(x5).T, q.converge, q.get_iteration())
+    print('optim ', q.solve(x5, armijo_mode=False).T, q.converge, q.get_iteration())

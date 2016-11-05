@@ -33,27 +33,41 @@ def golden_section_method(f, df, x0, step_size = 0.1, max_itration = 10000, eps 
 
     # ステップ情報
     step = step_size
-    direction = -1.0 * df0 # 目的関数が減少する方向へ
+    direction = -1.0 * df0 / abs(df0) # 目的関数が減少する方向へ
+
     x1 = x0
     f1 = f0
+    x2 = x0 + step * direction
+    f2 = f(x2)
 
-    iteration = 0
-    # 頂点の反対側のxを見つける
-    while iteration < max_itration:
-        iteration = iteration + 1
+    if f1 > f2:
+        iteration = 0
+        # 頂点の反対側のxを見つける
+        while iteration < max_itration:
+            iteration = iteration + 1
 
-        try:
-            x2 = x1 + step * direction
-            f2 = f(x2)
-            if f1 < f2:
-                break
+            try:
+                x3 = x0 + step * direction
+                f3 = f(x3)
 
-            step = 2.0 * step
-        except OverflowError as e:
-            raise DoNotConvergeException()
+                if f2 < f3:
+                    break
 
-    if iteration >= max_itration:
-        raise CanNotFindConvexException()
+                step = 2.0 * step
+                x1 = x2
+                f1 = f2
+                x2 = x3
+                f2 = f3
+
+            except OverflowError as e:
+                raise DoNotConvergeException()
+
+
+        if iteration >= max_itration:
+            raise CanNotFindConvexException()
+
+        x2 = x3
+        f2 = f3
 
     iteration = 0
     # 黄金分割法で頂点に近づいていく
