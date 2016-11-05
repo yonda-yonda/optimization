@@ -10,7 +10,7 @@ class SteepestDescentMethod(object):
     '''
         最急降下法
     '''
-    def __init__(self, objective_func, gradient_func, x_dim, max_iteration=None):
+    def __init__(self, objective_func, gradient_func, x_dim, max_iteration=None, eps=None):
         self.x_dim = x_dim
         x = np.mat(np.random.randn(self.x_dim,1))
         assert isinstance(objective_func, types.FunctionType), \
@@ -30,7 +30,10 @@ class SteepestDescentMethod(object):
         self.gradient_func = gradient_func
 
         # 終了条件
-        self.eps = 1e-6
+        if eps is not None:
+            self.eps = eps
+        else:
+            self.eps = 1e-6
         if max_iteration is None:
             self.max_iteration = max(100, 20 * x_dim)
         else:
@@ -50,14 +53,9 @@ class SteepestDescentMethod(object):
         self.X = np.mat(np.empty((self.x_dim,self.max_iteration)), dtype=np.float64)
         self.__k = 0
 
-    def solve(self, x0, eps=None, display=None):
+    def solve(self, x0):
         assert isinstance(x0, np.matrixlib.defmatrix.matrix) and x0.shape[0] == self.x_dim and x0.shape[1] == 1, \
             'x0はnumpyのmatrixかつx_dimの1次元配列である必要があります。'
-
-        if eps is not None:
-            self.eps = eps
-        if display is not None:
-            self.display = display
 
         # 目的変数初期化
         self.X[:, 0] = x0.copy()
@@ -99,22 +97,18 @@ class SteepestDescentMethod(object):
         if not self.__k >= self.max_iteration - 1:
             self.converge = True
 
-        if display:
-            print('iteration : ' + str(self.__k + 1))
-
         return self.X[:, self.__k]
 
 
     def get_objective_values(self):
-        """
-            Return:
-            numpy.matrix
-            状態量（ステップ0から終了ステップまで）
-        """
         return self.X[:,:self.__k+1]
+
+    def get_iteration(self):
+        return self.__k + 1
 
 
 if __name__ == '__main__':
+    print('SteepestDescentMethod')
 
     # 目的関数
     def objective1(x):
@@ -125,9 +119,8 @@ if __name__ == '__main__':
 
     x1 = np.mat([[1],[1]])
 
-    s=SteepestDescentMethod(objective1, gradient1,2)
-    print(s.solve(x1, display=True))
-    print(s.get_objective_values())
+    s=SteepestDescentMethod(objective1, gradient1, 2)
+    print(s.solve(x1), s.converge, s.get_iteration())
 
     def objective2(x):
         return x[0,0] ** 2 + 2 * x[1,0] ** 2 - 1.0 * x[0,0] * x[1,0] + x[0,0] - 2.0 * x[1,0]
@@ -137,6 +130,16 @@ if __name__ == '__main__':
 
     x2 = np.mat([[15],[15]])
 
-    s=SteepestDescentMethod(objective2, gradient2,2)
-    print(s.solve(x2, display=True))
-    print(s.get_objective_values())
+    s=SteepestDescentMethod(objective2, gradient2, 2)
+    print(s.solve(x2), s.converge, s.get_iteration())
+
+    def objective3(x):
+        return 100.0*(x[1,0] - x[0,0]**2)**2 + (1-x[0,0])**2
+
+    def gradient3(x):
+        return np.mat([[-400.0*x[0,0]*(x[1,0]-x[0,0]**2) - 2*(1-x[0,0])],[200.0*(x[1,0]-x[0,0]**2)]])
+
+    x3 = np.mat([[0],[0]])
+
+    s=SteepestDescentMethod(objective3, gradient3, 2, max_iteration=20000)
+    print(s.solve(x3), s.converge, s.get_iteration())
