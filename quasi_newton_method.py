@@ -5,84 +5,125 @@ import types
 import numbers
 import math
 
-class DoNotConvergeException (Exception):
-  def __str__ (self):
-    return ("Don't converge.")
-
-class FailedArmijoRuleException (Exception):
-  def __str__ (self):
-    return ("Failed armijo rule.")
-
-def quasi_newton_method(objective_func, gradient_func, x0, max_iteration=None, eps=1e-6, alpha = 0.001, beta = 0.5, max_power = 64, display=False):
+class QuasiNewtonMethod(object):
     '''
-    準ニュートン法
+        準ニュートン法
     '''
-    assert isinstance(x0, np.matrixlib.defmatrix.matrix) and x0.shape[1] == 1, \
-        'x0はnumpyのmatrixかつ1次元配列である必要があります。'
-    x_dim = x0.shape[0]
-    x_mat = x0.copy()
+    def __init__(self, objective_func, gradient_func, x_dim, max_iteration=None):
+        self.x_dim = x_dim
+        x = np.mat(np.random.randn(self.x_dim,1))
+        assert isinstance(objective_func, types.FunctionType), \
+            'objective_funcは関数である必要があります。'
 
-    assert isinstance(objective_func, types.FunctionType), \
-        'objective_funcは関数である必要があります。'
-    f = objective_func(x_mat)
-    assert not isinstance(f, bool) and isinstance(f, numbers.Number), \
-        'objective_funcの返り値は数値(スカラー)である必要があります。'
+        f = objective_func(x)
+        assert not isinstance(f, bool) and isinstance(f, numbers.Number), \
+            'objective_funcの返り値は数値(スカラー)である必要があります。'
+
+        self.objective_func = objective_func
+
+        assert isinstance(gradient_func, types.FunctionType), \
+            'gradient_funcは関数である必要があります。'
+        df_mat = gradient_func(x)
+        assert df_mat.shape[0] == self.x_dim and df_mat.shape[1] == 1, \
+            'gradient_funcの返り値はnumpyのmatrixかつ長さx_dimの1次元配列である必要があります。'
+        self.gradient_func = gradient_func
+
+        # 終了条件
+        self.eps = 1e-6
+        if max_iteration is None:
+            self.max_iteration = max(100, 20 * x_dim)
+        else:
+            self.max_iteration = max_iteration
+
+        # モード
+        self.display = False
+        self.line_search_success = False
+        self.converge = False
+
+        # アルミホのルールによる直線探索パラメータ
+        self.armijo_alpha = 0.001
+        self.armijo_beta = 0.5
+        self.armijo_max_iteration = 64
+
+        # 目的変数
+        self.X = np.mat(np.empty((self.x_dim,self.max_iteration)), dtype=np.float64)
+        self.__k = 0
+
+    def solve(self, x0, eps=None, display=None):
+        assert isinstance(x0, np.matrixlib.defmatrix.matrix) and x0.shape[0] == self.x_dim and x0.shape[1] == 1, \
+            'x0はnumpyのmatrixかつx_dimの1次元配列である必要があります。'
+
+        if eps is not None:
+            self.eps = eps
+        if display is not None:
+            self.display = display
+
+        # 目的変数初期化
+        self.X[:, 0] = x0.copy()
+        # フラグ初期化
+        self.line_search_success = False
+        self.converge = False
 
 
-    assert isinstance(gradient_func, types.FunctionType), \
-        'gradient_funcは関数である必要があります。'
-    df_mat = gradient_func(x_mat)
-    assert df_mat.shape[0] == x_dim and df_mat.shape[1] == 1, \
-        'gradient_funcの返り値はnumpyのmatrixかつ長さx_dimの1次元配列である必要があります。'
+        hessian = np.mat(np.identity(self.x_dim))
+        self.__k = 0
 
-    if max_iteration is None:
-        max_iteration = max(100, 20 * x_dim)
+        while self.__k < self.max_iteration:
+            x_mat = self.X[:, self.__k]
+            f = self.objective_func(x_mat)
+            df_mat = self.gradient_func(x_mat)
 
-    hessian = np.mat(np.identity(x_dim))
-
-    iteration = 0
-    while iteration < max_iteration:
-        iteration = iteration + 1
-
-        if np.linalg.norm(df_mat) < eps:
-            break
-
-        # 準ニュートン法
-        d_mat = -1.0 * hessian * df_mat
-
-        # Armijoルールによるステップ探索
-        armijo_power = 0
-        while armijo_power < max_power:
-            t = math.pow(beta, armijo_power)
-            if objective_func(x_mat + t*d_mat) <= f + alpha * t * df_mat.T * d_mat:
+            if np.linalg.norm(df_mat) < self.eps:
                 break
-            armijo_power = armijo_power + 1
 
-        if armijo_power >= max_power:
-            raise FailedArmijoRuleException()
+            # 準ニュートン法
+            d_mat = -1.0 * hessian * df_mat
 
-        # ヘッシアン
-        x_new_mat = x_mat + t * d_mat
-        df_new_mat = gradient_func(x_new_mat)
-        s_mat = x_new_mat - x_mat
-        y_mat = df_new_mat - df_mat
-        hessian = (np.mat(np.identity(x_dim)) - (s_mat * y_mat.T) / (s_mat.T * y_mat)) * hessian \
-            * (np.mat(np.identity(x_dim)) - (y_mat * s_mat.T) / (y_mat.T * s_mat)) + (s_mat * s_mat.T) / (s_mat.T * y_mat)
+            # Armijoルールによるステップ探索
+            armijo_power = 0
+            while armijo_power < self.armijo_max_iteration:
+                t = math.pow(self.armijo_beta , armijo_power)
+                if self.objective_func(x_mat + t*d_mat) <= f + self.armijo_alpha * t * df_mat.T * d_mat:
+                    break
+                armijo_power = armijo_power + 1
 
-        x_mat = x_new_mat
-        df_mat = df_new_mat
-        f = objective_func(x_mat)
+            if armijo_power >= self.armijo_max_iteration:
+                return None
+            else:
+                self.line_search_success = True
 
-    if iteration >= max_iteration:
-        raise DoNotConvergeException()
+            # ヘッシアン
+            x_new_mat = x_mat + t * d_mat
+            df_new_mat = self.gradient_func(x_new_mat)
+            s_mat = x_new_mat - x_mat
+            y_mat = df_new_mat - df_mat
+            hessian = (np.mat(np.identity(self.x_dim)) - (s_mat * y_mat.T) / (s_mat.T * y_mat)) * hessian \
+                * (np.mat(np.identity(self.x_dim)) - (y_mat * s_mat.T) / (y_mat.T * s_mat)) + (s_mat * s_mat.T) / (s_mat.T * y_mat)
 
-    if display:
-        print('iteration : ' + str(iteration))
 
-    return x_mat
+            self.__k = self.__k + 1
+            self.X[:, self.__k] = x_new_mat
+
+        if not self.__k >= self.max_iteration:
+            self.converge = True
+
+        if display:
+            print('iteration : ' + str(self.__k + 1))
+
+        return self.X[:, self.__k]
+
+
+    def get_objective_values(self):
+        """
+            Return:
+            numpy.matrix
+            状態量（ステップ0から終了ステップまで）
+        """
+        return self.X[:,:self.__k+1]
 
 
 if __name__ == '__main__':
+
     # 目的関数
     def objective1(x):
         return 2 * x[0,0] - 4 * x[1,0] + x[0,0] ** 2 + 2 * x[1,0] ** 2 + 2 * x[0,0] * x[1,0]
@@ -91,7 +132,10 @@ if __name__ == '__main__':
         return np.mat([[2 + 2*x[0,0] + 2*x[1,0]],[-4 + 4 * x[1,0] + 2*x[0,0]]])
 
     x1 = np.mat([[1],[1]])
-    print(quasi_newton_method(objective1, gradient1, x1, display=True))
+
+    q=QuasiNewtonMethod(objective1, gradient1,2)
+    print(q.solve(x1, display=True))
+    print(q.get_objective_values())
 
     def objective2(x):
         return x[0,0] ** 2 + 2 * x[1,0] ** 2 - 1.0 * x[0,0] * x[1,0] + x[0,0] - 2.0 * x[1,0]
@@ -101,4 +145,6 @@ if __name__ == '__main__':
 
     x2 = np.mat([[15],[15]])
 
-    print(quasi_newton_method(objective2, gradient2, x2, display=True))
+    q=QuasiNewtonMethod(objective2, gradient2,2)
+    print(q.solve(x2, display=True))
+    print(q.get_objective_values())
