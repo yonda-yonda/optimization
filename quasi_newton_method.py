@@ -68,7 +68,7 @@ class QuasiNewtonMethod(object):
         hessian = np.mat(np.identity(self.x_dim))
         self.__k = 0
 
-        while self.__k < self.max_iteration:
+        while self.__k < self.max_iteration - 1:
             x_mat = self.X[:, self.__k]
             f = self.objective_func(x_mat)
             df_mat = self.gradient_func(x_mat)
@@ -104,7 +104,7 @@ class QuasiNewtonMethod(object):
             self.__k = self.__k + 1
             self.X[:, self.__k] = x_new_mat
 
-        if not self.__k >= self.max_iteration:
+        if not self.__k >= self.max_iteration - 1:
             self.converge = True
 
         if display:
