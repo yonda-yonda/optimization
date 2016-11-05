@@ -137,12 +137,27 @@ if __name__ == '__main__':
     print(c.solve(x2), c.converge, c.get_iteration())
 
     def objective3(x):
-        return 100.0*(x[1,0] - x[0,0]**2)**2 + (1-x[0,0])**2
+        return x[0,0] ** 2 + 2 * x[1,0] ** 2 - 1.0 * x[0,0] * x[1,0] + x[0,0] - 2.0 * x[1,0] \
+            + 4.0 * math.sin(0.1 * (x[0,0] + 0.2857)**2) + 12.0 * math.sin(0.1 * (x[1,0] - 0.4286)**2)
 
     def gradient3(x):
+        return np.mat([\
+            [2*x[0,0] -1.0*x[1,0] + 1.0 + 0.8 * (x[0,0] + 0.2857) * math.cos(0.1 * (x[0,0] + 0.2857)**2)],\
+            [4 * x[1,0] -1.0*x[0,0] -2.0 + 2.4 * (x[1,0] - 0.4286) * math.cos(0.1 * (x[1,0] - 0.4286)**2)]\
+            ])
+
+    x3 = np.mat([[15],[15]])
+
+    c=ConjugateGradientMethod(objective3, gradient3, 2)
+    print(c.solve(x3), c.converge, c.get_iteration())
+
+    def objective4(x):
+        return 100.0*(x[1,0] - x[0,0]**2)**2 + (1-x[0,0])**2
+
+    def gradient4(x):
         return np.mat([[-400.0*x[0,0]*(x[1,0]-x[0,0]**2) - 2*(1-x[0,0])],[200.0*(x[1,0]-x[0,0]**2)]])
 
-    x3 = np.mat([[0],[0]])
+    x4 = np.mat([[0],[0]])
 
-    c=ConjugateGradientMethod(objective3, gradient3, 2, max_iteration=20000)
-    print(c.solve(x3), c.converge, c.get_iteration())
+    c=ConjugateGradientMethod(objective4, gradient4, 2, max_iteration=20000)
+    print(c.solve(x4), c.converge, c.get_iteration())
