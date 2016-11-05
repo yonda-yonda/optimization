@@ -167,3 +167,17 @@ if __name__ == '__main__':
 
     q=QuasiNewtonMethod(objective4, gradient4, 2, max_iteration=20000)
     print(q.solve(x4), q.converge, q.get_iteration())
+
+    def objective5(x):
+        return (1.5 - x[0,0]*(1 - x[1,0]))**2 + (2.25 - x[0,0] * (1-x[1,0]**2))**2 + (2.625 - x[0,0] * (1-x[1,0]**3))**2
+
+    def gradient5(x):
+        return np.mat([\
+            [ -2.0*(1 - x[1,0])*(1.5 - x[0,0]*(1 - x[1,0])) -2.0 * (1-x[1,0]**2) * (2.25 - x[0,0] * (1-x[1,0]**2)) -2.0 * (1-x[1,0]**3) *(2.625 - x[0,0] * (1-x[1,0]**3))],\
+            [ 2.0*x[0,0]*(1.5 - x[0,0]*(1 - x[1,0])) +4.0 *x[0,0]*x[1,0]*(2.25 - x[0,0] * (1-x[1,0]**2)) + 6.0*x[0,0]*x[1,0]*x[1,0]*(2.625 - x[0,0] * (1-x[1,0]**3))]\
+            ])
+
+    x5 = np.mat([[0],[0]])
+
+    q=QuasiNewtonMethod(objective5, gradient5, 2, max_iteration=20000)
+    print(q.solve(x4), q.converge, q.get_iteration())
