@@ -104,10 +104,7 @@ class QuasiNewtonMethod(object):
                 def line_objective_function(t):
                     return self.objective_func(x_mat + t * d_mat)
 
-                def line_gradient_function(t):
-                    return (self.gradient_func(x_mat + t * d_mat).T * df_mat)[0,0]
-
-                t = golden_section_method(line_objective_function, line_gradient_function, 0.0, self.step_size)
+                t = golden_section_method(line_objective_function, 0.0, self.step_size)
 
 
             # ヘッシアン
