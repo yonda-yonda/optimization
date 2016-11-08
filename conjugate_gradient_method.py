@@ -17,7 +17,7 @@ class ConjugateGradientMethod(object):
     '''
         共役勾配法
     '''
-    def __init__(self, objective_func, gradient_func, x_dim, max_iteration=None, eps=None):
+    def __init__(self, objective_func, x_dim, gradient_func=None, max_iteration=None, eps=None):
         self.x_dim = x_dim
         x = np.mat(np.random.randn(self.x_dim,1))
         assert isinstance(objective_func, types.FunctionType), \
@@ -29,12 +29,16 @@ class ConjugateGradientMethod(object):
 
         self.objective_func = objective_func
 
-        assert isinstance(gradient_func, types.FunctionType), \
-            'gradient_funcは関数である必要があります。'
-        df_mat = gradient_func(x)
-        assert df_mat.shape[0] == self.x_dim and df_mat.shape[1] == 1, \
-            'gradient_funcの返り値はnumpyのmatrixかつ長さx_dimの1次元配列である必要があります。'
-        self.gradient_func = gradient_func
+        if gradient_func is None:
+            self.gradient_func = self.calculate_gradient
+        else:
+            assert isinstance(gradient_func, types.FunctionType), \
+                'gradient_funcは関数である必要があります。'
+            df_mat = gradient_func(x)
+            assert df_mat.shape[0] == self.x_dim and df_mat.shape[1] == 1, \
+                'gradient_funcの返り値はnumpyのmatrixかつ長さx_dimの1次元配列である必要があります。'
+            self.gradient_func = gradient_func
+
 
         # 終了条件
         if eps is not None:
@@ -46,6 +50,9 @@ class ConjugateGradientMethod(object):
         else:
             self.max_iteration = max_iteration
 
+        # 微分計算
+        self.diff = 0.001
+
         # モード
         self.line_search_success = False
         self.converge = False
@@ -56,11 +63,15 @@ class ConjugateGradientMethod(object):
         self.armijo_max_iteration = 64
 
         # 直線探索
-        self.step_size = 0.001
+        self.step_size = 1e-4
 
         # 目的変数
         self.X = np.mat(np.empty((self.x_dim,self.max_iteration)), dtype=np.float64)
         self.__k = 0
+
+    def calculate_gradient(self, x):
+        shift_mat = (x * np.ones(self.x_dim) + self.diff * np.mat(np.identity(self.x_dim))).T
+        return np.mat([(self.objective_func(shift_x.T) - self.objective_func(x))/self.diff for shift_x in shift_mat]).T
 
     def solve(self, x0, armijo_mode = True):
         assert isinstance(x0, np.matrixlib.defmatrix.matrix) and x0.shape[0] == self.x_dim and x0.shape[1] == 1, \
@@ -139,9 +150,9 @@ if __name__ == '__main__':
     def gradient1(x):
         return np.mat([[2 + 2*x[0,0] + 2*x[1,0]],[-4 + 4 * x[1,0] + 2*x[0,0]]])
 
-    x1 = np.mat([[1],[1]])
+    x1 = np.mat([[1],[10]])
 
-    c=ConjugateGradientMethod(objective1, gradient1,2)
+    c=ConjugateGradientMethod(objective1, 2, gradient1)
     print('armijo', c.solve(x1).T, c.converge, c.get_iteration())
     print('optim ', c.solve(x1, armijo_mode=False).T, c.converge, c.get_iteration())
 
@@ -154,7 +165,7 @@ if __name__ == '__main__':
 
     x2 = np.mat([[15],[15]])
 
-    c=ConjugateGradientMethod(objective2, gradient2,2)
+    c=ConjugateGradientMethod(objective2, 2, gradient2)
     print('armijo', c.solve(x2).T, c.converge, c.get_iteration())
     print('optim ', c.solve(x2, armijo_mode=False).T, c.converge, c.get_iteration())
 
@@ -171,7 +182,7 @@ if __name__ == '__main__':
 
     x3 = np.mat([[15],[15]])
 
-    c=ConjugateGradientMethod(objective3, gradient3, 2)
+    c=ConjugateGradientMethod(objective3, 2, gradient3)
     print('armijo', c.solve(x3).T, c.converge, c.get_iteration())
     print('optim ', c.solve(x3, armijo_mode=False).T, c.converge, c.get_iteration())
 
@@ -184,7 +195,7 @@ if __name__ == '__main__':
 
     x4 = np.mat([[0],[0]])
 
-    c=ConjugateGradientMethod(objective4, gradient4, 2)
+    c=ConjugateGradientMethod(objective4, 2, gradient4)
     print('armijo', c.solve(x4).T, c.converge, c.get_iteration())
     print('optim ', c.solve(x4, armijo_mode=False).T, c.converge, c.get_iteration())
 
@@ -199,6 +210,15 @@ if __name__ == '__main__':
             ])
 
     x5 = np.mat([[0],[0]])
-    c=ConjugateGradientMethod(objective5, gradient5, 2)
+    c=ConjugateGradientMethod(objective5, 2, gradient5)
+    print('armijo', c.solve(x5).T, c.converge, c.get_iteration())
+    print('optim ', c.solve(x5, armijo_mode=False).T, c.converge, c.get_iteration())
+
+    c=ConjugateGradientMethod(objective5, 2)
+    print('勾配を解析的に与えない場合(' + str(c.diff) + ')')
+    print('armijo', c.solve(x5).T, c.converge, c.get_iteration())
+    print('optim ', c.solve(x5, armijo_mode=False).T, c.converge, c.get_iteration())
+    c.diff = 1e-8
+    print('xの差を小さくする(' + str(c.diff) + ')')
     print('armijo', c.solve(x5).T, c.converge, c.get_iteration())
     print('optim ', c.solve(x5, armijo_mode=False).T, c.converge, c.get_iteration())
