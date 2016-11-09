@@ -51,7 +51,7 @@ class ConjugateGradientMethod(object):
             self.max_iteration = max_iteration
 
         # 微分計算
-        self.diff = 0.001
+        self.diff = 1e-3
 
         # モード
         self.line_search_success = False
@@ -70,8 +70,9 @@ class ConjugateGradientMethod(object):
         self.__k = 0
 
     def calculate_gradient(self, x):
-        shift_mat = (x * np.ones(self.x_dim) + self.diff * np.mat(np.identity(self.x_dim))).T
-        return np.mat([(self.objective_func(shift_x.T) - self.objective_func(x))/self.diff for shift_x in shift_mat]).T
+        # 5次の中心差分公式
+        shift_mat = self.diff * np.mat(np.identity(self.x_dim))
+        return np.mat([(-1/12*self.objective_func(x + 2*shift.T) + 2/3*self.objective_func(x + shift.T) - 2/3*self.objective_func(x - shift.T) + 1/12*self.objective_func(x - 2*shift.T))/self.diff for shift in shift_mat]).T
 
     def solve(self, x0, armijo_mode = True):
         assert isinstance(x0, np.matrixlib.defmatrix.matrix) and x0.shape[0] == self.x_dim and x0.shape[1] == 1, \
@@ -122,6 +123,7 @@ class ConjugateGradientMethod(object):
                     return self.objective_func(x_mat + t * d_mat)
 
                 t = golden_section_method(line_objective_function, 0.0, self.step_size)
+                self.line_search_success = True
 
 
             df_pre_mat = df_mat
@@ -144,81 +146,113 @@ if __name__ == '__main__':
     print('ConjugateGradientMethod')
 
     print('problem1')
-    def objective1(x):
+    def objective(x):
         return 2 * x[0,0] - 4 * x[1,0] + x[0,0] ** 2 + 2 * x[1,0] ** 2 + 2 * x[0,0] * x[1,0]
 
-    def gradient1(x):
+    def gradient(x):
         return np.mat([[2 + 2*x[0,0] + 2*x[1,0]],[-4 + 4 * x[1,0] + 2*x[0,0]]])
 
-    x1 = np.mat([[1],[10]])
+    x = np.mat([[1],[10]])
+    opt=ConjugateGradientMethod(objective, 2, gradient)
+    print('微分：解析解')
+    print('armijo', opt.solve(x).T, opt.converge, opt.get_iteration())
+    print('optim ', opt.solve(x, armijo_mode=False).T, opt.converge, opt.get_iteration())
 
-    c=ConjugateGradientMethod(objective1, 2, gradient1)
-    print('armijo', c.solve(x1).T, c.converge, c.get_iteration())
-    print('optim ', c.solve(x1, armijo_mode=False).T, c.converge, c.get_iteration())
+    opt=ConjugateGradientMethod(objective, 2)
+    print('微分：数値微分')
+    print('armijo', opt.solve(x).T, opt.converge, opt.get_iteration())
+    print('optim ', opt.solve(x, armijo_mode=False).T, opt.converge, opt.get_iteration())
 
     print('problem2')
-    def objective2(x):
+    def objective(x):
         return x[0,0] ** 2 + 2 * x[1,0] ** 2 - 1.0 * x[0,0] * x[1,0] + x[0,0] - 2.0 * x[1,0]
 
-    def gradient2(x):
+    def gradient(x):
         return np.mat([[2*x[0,0] -1.0*x[1,0] + 1.0],[4 * x[1,0] -1.0*x[0,0] -2.0]])
 
-    x2 = np.mat([[15],[15]])
+    x = np.mat([[15],[15]])
+    opt=ConjugateGradientMethod(objective, 2, gradient)
+    print('微分：解析解')
+    print('armijo', opt.solve(x).T, opt.converge, opt.get_iteration())
+    print('optim ', opt.solve(x, armijo_mode=False).T, opt.converge, opt.get_iteration())
 
-    c=ConjugateGradientMethod(objective2, 2, gradient2)
-    print('armijo', c.solve(x2).T, c.converge, c.get_iteration())
-    print('optim ', c.solve(x2, armijo_mode=False).T, c.converge, c.get_iteration())
+    opt=ConjugateGradientMethod(objective, 2)
+    print('微分：数値微分')
+    print('armijo', opt.solve(x).T, opt.converge, opt.get_iteration())
+    print('optim ', opt.solve(x, armijo_mode=False).T, opt.converge, opt.get_iteration())
 
     print('problem3')
-    def objective3(x):
+    def objective(x):
         return x[0,0] ** 2 + 2 * x[1,0] ** 2 - 1.0 * x[0,0] * x[1,0] + x[0,0] - 2.0 * x[1,0] \
             + 4.0 * math.sin(0.1 * (x[0,0] + 0.2857)**2) + 12.0 * math.sin(0.1 * (x[1,0] - 0.4286)**2)
 
-    def gradient3(x):
+    def gradient(x):
         return np.mat([\
             [2*x[0,0] -1.0*x[1,0] + 1.0 + 0.8 * (x[0,0] + 0.2857) * math.cos(0.1 * (x[0,0] + 0.2857)**2)],\
             [4 * x[1,0] -1.0*x[0,0] -2.0 + 2.4 * (x[1,0] - 0.4286) * math.cos(0.1 * (x[1,0] - 0.4286)**2)]\
             ])
 
-    x3 = np.mat([[15],[15]])
+    x = np.mat([[15],[15]])
+    opt=ConjugateGradientMethod(objective, 2, gradient)
+    print('微分：解析解')
+    print('armijo', opt.solve(x).T, opt.converge, opt.get_iteration())
+    print('optim ', opt.solve(x, armijo_mode=False).T, opt.converge, opt.get_iteration())
 
-    c=ConjugateGradientMethod(objective3, 2, gradient3)
-    print('armijo', c.solve(x3).T, c.converge, c.get_iteration())
-    print('optim ', c.solve(x3, armijo_mode=False).T, c.converge, c.get_iteration())
+    opt=ConjugateGradientMethod(objective, 2)
+    print('微分：数値微分')
+    print('armijo', opt.solve(x).T, opt.converge, opt.get_iteration())
+    print('optim ', opt.solve(x, armijo_mode=False).T, opt.converge, opt.get_iteration())
 
     print('problem4')
-    def objective4(x):
+    def objective(x):
         return 100.0*(x[1,0] - x[0,0]**2)**2 + (1-x[0,0])**2
 
-    def gradient4(x):
+    def gradient(x):
         return np.mat([[-400.0*x[0,0]*(x[1,0]-x[0,0]**2) - 2*(1-x[0,0])],[200.0*(x[1,0]-x[0,0]**2)]])
 
-    x4 = np.mat([[0],[0]])
+    x = np.mat([[0],[0]])
+    opt=ConjugateGradientMethod(objective, 2, gradient)
+    print('微分：解析解')
+    print('armijo', opt.solve(x).T, opt.converge, opt.get_iteration())
+    print('optim ', opt.solve(x, armijo_mode=False).T, opt.converge, opt.get_iteration())
 
-    c=ConjugateGradientMethod(objective4, 2, gradient4)
-    print('armijo', c.solve(x4).T, c.converge, c.get_iteration())
-    print('optim ', c.solve(x4, armijo_mode=False).T, c.converge, c.get_iteration())
+    opt=ConjugateGradientMethod(objective, 2)
+    print('微分：数値微分')
+    print('armijo', opt.solve(x).T, opt.converge, opt.get_iteration())
+    print('optim ', opt.solve(x, armijo_mode=False).T, opt.converge, opt.get_iteration())
 
     print('problem5')
-    def objective5(x):
+    def objective(x):
         return (1.5 - x[0,0]*(1 - x[1,0]))**2 + (2.25 - x[0,0] * (1-x[1,0]**2))**2 + (2.625 - x[0,0] * (1-x[1,0]**3))**2
 
-    def gradient5(x):
+    def gradient(x):
         return np.mat([\
             [ -2.0*(1 - x[1,0])*(1.5 - x[0,0]*(1 - x[1,0])) -2.0 * (1-x[1,0]**2) * (2.25 - x[0,0] * (1-x[1,0]**2)) -2.0 * (1-x[1,0]**3) *(2.625 - x[0,0] * (1-x[1,0]**3))],\
             [ 2.0*x[0,0]*(1.5 - x[0,0]*(1 - x[1,0])) +4.0 *x[0,0]*x[1,0]*(2.25 - x[0,0] * (1-x[1,0]**2)) + 6.0*x[0,0]*x[1,0]*x[1,0]*(2.625 - x[0,0] * (1-x[1,0]**3))]\
             ])
 
-    x5 = np.mat([[0],[0]])
-    c=ConjugateGradientMethod(objective5, 2, gradient5)
-    print('armijo', c.solve(x5).T, c.converge, c.get_iteration())
-    print('optim ', c.solve(x5, armijo_mode=False).T, c.converge, c.get_iteration())
+    x = np.mat([[0],[0]])
+    opt=ConjugateGradientMethod(objective, 2, gradient)
+    print('微分：解析解')
+    print('armijo', opt.solve(x).T, opt.converge, opt.get_iteration())
+    print('optim ', opt.solve(x, armijo_mode=False).T, opt.converge, opt.get_iteration())
 
-    c=ConjugateGradientMethod(objective5, 2)
-    print('勾配を解析的に与えない場合(' + str(c.diff) + ')')
-    print('armijo', c.solve(x5).T, c.converge, c.get_iteration())
-    print('optim ', c.solve(x5, armijo_mode=False).T, c.converge, c.get_iteration())
-    c.diff = 1e-8
-    print('xの差を小さくする(' + str(c.diff) + ')')
-    print('armijo', c.solve(x5).T, c.converge, c.get_iteration())
-    print('optim ', c.solve(x5, armijo_mode=False).T, c.converge, c.get_iteration())
+    opt=ConjugateGradientMethod(objective, 2)
+    print('微分：数値微分(' + str(opt.diff) +')')
+    print('armijo', opt.solve(x).T, opt.converge, opt.get_iteration())
+    print('optim ', opt.solve(x, armijo_mode=False).T, opt.converge, opt.get_iteration())
+
+    opt.diff = 1e-1
+    print('微分：数値微分(' + str(opt.diff) +')')
+    print('armijo', opt.solve(x).T, opt.converge, opt.get_iteration())
+    print('optim ', opt.solve(x, armijo_mode=False).T, opt.converge, opt.get_iteration())
+
+    opt.diff = 1e-2
+    print('微分：数値微分(' + str(opt.diff) +')')
+    print('armijo', opt.solve(x).T, opt.converge, opt.get_iteration())
+    print('optim ', opt.solve(x, armijo_mode=False).T, opt.converge, opt.get_iteration())
+
+    opt.diff = 1e-8
+    print('微分：数値微分(' + str(opt.diff) +')')
+    print('armijo', opt.solve(x).T, opt.converge, opt.get_iteration())
+    print('optim ', opt.solve(x, armijo_mode=False).T, opt.converge, opt.get_iteration())
