@@ -152,6 +152,8 @@ class QuasiNewtonMethod(object):
 
 
 if __name__ == '__main__':
+    # from scipy import optimize
+
     print('QuasiNewtonMethod')
 
     print('problem1')
@@ -171,6 +173,17 @@ if __name__ == '__main__':
     print('微分：数値微分')
     print('armijo', opt.solve(x).T, opt.converge, opt.get_iteration())
     print('optim ', opt.solve(x, armijo_mode=False).T, opt.converge, opt.get_iteration())
+
+    ## scipy
+    # print('scipyデモ')
+    # def objective_array(x):
+    #     return 2 * x[0] - 4 * x[1] + x[0] ** 2 + 2 * x[1] ** 2 + 2 * x[0] * x[1]
+
+    # def gradient_array(x):
+    #     return np.array([2 + 2*x[0] + 2*x[1],-4 + 4 * x[1] + 2*x[0]])
+
+    # print(optimize.fmin_l_bfgs_b(objective_array, [0, 0], fprime=gradient_array))
+
 
     print('problem2')
     def objective(x):
