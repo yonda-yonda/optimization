@@ -96,26 +96,32 @@ def golden_section_method(f, x0, step_size = 0.001, max_itration = 10000, eps = 
 
 
 if __name__ == '__main__':
-    # 目的関数
+    # from scipy import optimize
+
+    ## 目的関数
     def objective1(x):
         return x ** 4 + 3.0 * x ** 3 + 2.0 * x ** 2 + 1.0
-    # 極地は-1.640388203(下に凸), -0.609611797(上に凸), 0.0(下に凸)
+    ## 極地は-1.640388203(下に凸), -0.609611797(上に凸), 0.0(下に凸)
 
     x1 = -10.0
 
     print('objective : x ** 4 + 3.0 * x ** 3 + 2.0 * x ** 2 + 1.0')
     print('x0 = ' + str(x1))
     print(golden_section_method(objective1, x1))
+    ## scipy
+    # print(optimize.brent(objective1,full_output=True))
 
     def objective2(x):
         return x ** 3 - x ** 2 - 2.0 * x
-    # 極地は1.21525043702153(下に凸), -0.548583770354864(上に凸)
+    ## 極地は1.21525043702153(下に凸), -0.548583770354864(上に凸)
 
     x2 = 0.0
 
     print('objective : x ** 3 - x ** 2 - 2.0 * x')
     print('x0 = ' + str(x2))
     print(golden_section_method(objective2, x2))
+    ## scipy
+    # print(optimize.brent(objective2,full_output=True))
 
     x3 = -10.0
 
