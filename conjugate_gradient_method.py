@@ -143,6 +143,8 @@ class ConjugateGradientMethod(object):
 
 
 if __name__ == '__main__':
+    # from scipy import optimize
+
     print('ConjugateGradientMethod')
 
     print('problem1')
@@ -162,6 +164,18 @@ if __name__ == '__main__':
     print('微分：数値微分')
     print('armijo', opt.solve(x).T, opt.converge, opt.get_iteration())
     print('optim ', opt.solve(x, armijo_mode=False).T, opt.converge, opt.get_iteration())
+
+    ## scipy
+    # print('scipyデモ')
+    # def objective_array(x):
+    #     return 2 * x[0] - 4 * x[1] + x[0] ** 2 + 2 * x[1] ** 2 + 2 * x[0] * x[1]
+    ## 初期値の条件が厳しい
+    # print(optimize.fmin_cg(objective_array, [3, 2],full_output=True))
+
+    # def gradient_array(x):
+    #     return np.array([2 + 2*x[0] + 2*x[1],-4 + 4 * x[1] + 2*x[0]])
+    ## 傾きを与えるほうが収束が速い
+    # print(optimize.fmin_cg(objective_array, [3, 2],full_output=True, fprime=gradient_array))
 
     print('problem2')
     def objective(x):
